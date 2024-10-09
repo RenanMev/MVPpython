@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Link } from 'react-router-dom'; 
+import { Link, useNavigate } from 'react-router-dom';
 import { Sun, Moon } from 'lucide-react';
+import axios from 'axios';
 
 
 export const Register: React.FC = () => {
@@ -9,6 +10,7 @@ export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,7 +18,14 @@ export const Register: React.FC = () => {
       alert('As senhas não correspondem!');
       return;
     }
-    console.log('Usuário registrado com', { email, password });
+    axios.post("http://127.0.0.1:5000/register", { email, password })
+      .then((res) => {
+        alert('Conta criada com sucesso!');
+        localStorage.setItem('accessToken', "true");
+        setTimeout(() => {
+          navigate("/home")
+        }, 500)
+      })
   };
 
   return (
@@ -61,7 +70,7 @@ export const Register: React.FC = () => {
             >
               Registrar
             </button>
-            <Link to="/" className="w-full"> 
+            <Link to="/" className="w-full">
               <button
                 type="button"
                 className="bg-green-500 hover:bg-green-600 text-white rounded px-4 py-2 w-full"

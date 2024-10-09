@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export const Login: React.FC = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login realizado com', { email, password });
+    axios.post("http://127.0.0.1:5000/login", { email, password })
+      .then((res) => {
+        localStorage.setItem('accessToken', "true");
+        setTimeout(() => {
+          navigate("/home")
+        }, 500)
+      })
   };
 
   return (
@@ -45,7 +54,7 @@ export const Login: React.FC = () => {
             >
               Entrar
             </button>
-            <Link to="/register" className="w-full"> 
+            <Link to="/register" className="w-full">
               <button
                 type="button"
                 className="bg-green-500 hover:bg-green-600 text-white rounded px-4 py-2 w-full"
