@@ -38,35 +38,66 @@ class Usuario(db.Model):
             'email': self.email
         }
 
+class UsuarioService:
+    @staticmethod
+    def registrar_usuario(email, password):
+        if Usuario.query.filter_by(email=email).first():
+            return {'message': 'Usuário já existe'}, 400
+        
+        password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = Usuario(email=email, password_hash=password_hash)
+        db.session.add(new_user)
+        db.session.commit()
+        return {'message': 'Usuário registrado com sucesso'}, 201
+
+    @staticmethod
+    def login_usuario(email, password):
+        user = Usuario.query.filter_by(email=email).first()
+        if user and bcrypt.check_password_hash(user.password_hash, password):
+            return {'message': 'Login bem-sucedido'}, 200
+        else:
+            return {'message': 'Credenciais inválidas'}, 401
+
+class PedidoService:
+    @staticmethod
+    def criar_pedido(cliente, endereco, produto, status):
+        novo_pedido = Pedido(cliente=cliente, endereco=endereco, produto=produto, status=status)
+        db.session.add(novo_pedido)
+        db.session.commit()
+        return novo_pedido.to_dict(), 201
+
+    @staticmethod
+    def atualizar_pedido(pedido_id, data):
+        pedido = Pedido.query.get(pedido_id)
+        if pedido is None:
+            return {'message': 'Pedido não encontrado'}, 404
+        
+        pedido.cliente = data.get('cliente', pedido.cliente)
+        pedido.endereco = data.get('endereco', pedido.endereco)
+        pedido.produto = data.get('produto', pedido.produto)
+        pedido.status = data.get('status', pedido.status)
+        db.session.commit()
+        return pedido.to_dict(), 200
+
+    @staticmethod
+    def deletar_pedido(pedido_id):
+        pedido = Pedido.query.get(pedido_id)
+        if pedido is None:
+            return {'message': 'Pedido não encontrado'}, 404
+        
+        db.session.delete(pedido)
+        db.session.commit()
+        return {'message': 'Pedido deletado com sucesso'}, 200
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
-    email = data['email']
-    password = data['password']
-
-    if Usuario.query.filter_by(email=email).first():
-        return jsonify({'message': 'Usuário já existe'}), 400
-
-    password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = Usuario(email=email, password_hash=password_hash)
-
-    db.session.add(new_user)
-    db.session.commit()
-
-    return jsonify({'message': 'Usuário registrado com sucesso'}), 201
+    return UsuarioService.registrar_usuario(data['email'], data['password'])
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    email = data['email']
-    password = data['password']
-
-    user = Usuario.query.filter_by(email=email).first()
-
-    if user and bcrypt.check_password_hash(user.password_hash, password):
-        return jsonify({'message': 'Login bem-sucedido'}), 200
-    else:
-        return jsonify({'message': 'Credenciais inválidas'}), 401
+    return UsuarioService.login_usuario(data['email'], data['password'])
 
 @app.route('/pedidos', methods=['GET'])
 def get_pedidos():
@@ -76,39 +107,16 @@ def get_pedidos():
 @app.route('/pedidos', methods=['POST'])
 def create_pedido():
     novo_pedido = request.json
-    pedido = Pedido(
-        cliente=novo_pedido['cliente'],
-        endereco=novo_pedido['endereco'],
-        produto=novo_pedido['produto'],
-        status=novo_pedido['status']
-    )
-    db.session.add(pedido)
-    db.session.commit()
-    return jsonify(pedido.to_dict()), 201
+    return PedidoService.criar_pedido(novo_pedido['cliente'], novo_pedido['endereco'], novo_pedido['produto'], novo_pedido['status'])
 
 @app.route('/pedidos/<int:pedido_id>', methods=['PUT'])
 def update_pedido(pedido_id):
-    pedido = Pedido.query.get(pedido_id)
-    if pedido is None:
-        return jsonify({'message': 'Pedido não encontrado'}), 404
-
     data = request.json
-    pedido.cliente = data.get('cliente', pedido.cliente)
-    pedido.endereco = data.get('endereco', pedido.endereco)
-    pedido.produto = data.get('produto', pedido.produto)
-    pedido.status = data.get('status', pedido.status)
-    db.session.commit()
-    return jsonify(pedido.to_dict())
+    return PedidoService.atualizar_pedido(pedido_id, data)
 
 @app.route('/pedidos/<int:pedido_id>', methods=['DELETE'])
 def delete_pedido(pedido_id):
-    pedido = Pedido.query.get(pedido_id)
-    if pedido is None:
-        return jsonify({'message': 'Pedido não encontrado'}), 404
-
-    db.session.delete(pedido)
-    db.session.commit()
-    return jsonify({'message': 'Pedido deletado com sucesso'})
+    return PedidoService.deletar_pedido(pedido_id)
 
 if __name__ == '__main__':
     with app.app_context():
