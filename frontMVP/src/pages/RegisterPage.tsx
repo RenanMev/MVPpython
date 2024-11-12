@@ -1,93 +1,116 @@
-import React, { useState } from 'react';
-import { useTheme } from '../context/ThemeContext';
-import { Link, useNavigate } from 'react-router-dom';
-import { Sun, Moon } from 'lucide-react';
-import axios from 'axios';
 
+import React, { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useNavigate } from 'react-router-dom'
+import { useToast } from '@/hooks/use-toast'
 
-export const Register: React.FC = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+export default function Register() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const { toast } = useToast()
   const navigate = useNavigate();
 
+
   const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (password !== confirmPassword) {
-      alert('As senhas não correspondem!');
-      return;
+      toast({
+        title: "Error",
+        description: "As senhas não correspondem!",
+        variant: "destructive",
+      })
+      return
     }
-    axios.post("http://127.0.0.1:5000/register", { email, password })
+    fetch("http://127.0.0.1:5000/register", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    })
       .then((res) => {
-        alert('Conta criada com sucesso!');
-        localStorage.setItem('accessToken', "true");
+        if (!res.ok) {
+          throw new Error('Registration failed')
+        }
+        return res.json()
+      })
+      .then(() => {
+        toast({
+          title: "Success",
+          description: "Conta criada com sucesso!",
+        })
+        localStorage.setItem('accessToken', "true")
         setTimeout(() => {
-          navigate("/home")
+          navigate('/home');
         }, 500)
       })
-  };
+      .catch(() => {
+        toast({
+          title: "Error",
+          description: "Falha no registro. Tente novamente.",
+          variant: "destructive",
+        })
+      })
+  }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-      <div className={`p-8 rounded shadow-lg ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}>
-        <h2 className="text-2xl font-semibold mb-6 text-center">Registrar</h2>
-        <form onSubmit={handleRegister}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Email:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="border p-2 w-full rounded"
-              placeholder="Digite seu email"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Senha:</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border p-2 w-full rounded"
-              placeholder="Digite sua senha"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-sm font-medium">Confirme a Senha:</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="border p-2 w-full rounded"
-              placeholder="Confirme sua senha"
-            />
-          </div>
-          <div className="flex justify-between items-center flex-col gap-3">
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white w-full  px-4 py-2 rounded"
-            >
+    <div className="min-h-screen flex items-center justify-center ">
+      <Card className="w-[350px]">
+        <CardHeader>
+          <CardTitle>Registrar</CardTitle>
+          <CardDescription>Crie sua conta para começar.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Digite seu email"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Digite sua senha"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirme a Senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirme sua senha"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full bg-orangePrimary hover:bg-orange-800 text-white">
               Registrar
-            </button>
-            <Link to="/" className="w-full">
-              <button
-                type="button"
-                className="bg-green-500 hover:bg-green-600 text-white rounded px-4 py-2 w-full"
-              >
-                Ja tenho uma conta
-              </button>
-            </Link>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="flex items-center justify-center bg-gray-500 hover:bg-gray-600 text-white rounded p-2"
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-          </div>
-        </form>
-      </div>
+            </Button>
+            <div className="mt-4 text-center text-sm">
+          Ja tem uma conta?{" "}
+          <a href="/" className="underline">
+            Login
+          </a>
+        </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
-  );
-};
+  )
+}
